@@ -3,104 +3,84 @@
  *
  * A demo login page.
  */
-import axios from 'axios'
-import { useEffect, useState } from 'react'
-
-// Get the actual API_URL as an environment variable. For real
-// applications, you might want to get it from 'next/config' instead.
-const API_URL = process.env.API_URL
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { parse } from "cookie";
 
 // The following getServerSideProps function demonstrates how to make
 // API requests from the server. We basically take the auth-token cookie
 // and from it create an HTTP header, just like the API Proxy does.
-export async function getServerSideProps({ req, res }) {
+// Obtiene las cookies en el lado del servidor utilizando getServerSideProps
+export async function getServerSideProps({ req }) {
 	try {
-		const Cookies = require('cookies')
-		const cookies = new Cookies(req, res)
-		const authToken = cookies.get('auth-token') || ''
+		// Verifica si ya hay cookies disponibles en la solicitud
+		const cookies = parse(req.headers.cookie || "");
 
-		const { email } = await axios
-			.get(`${API_URL}/me`, { headers: { 'auth-token': authToken } })
-			.then((response) => response.data)
+		// Determina si el usuario ha iniciado sesión
+		const loggedIn = cookies.isLoggedIn === "true";
 
-		return { props: { initialLoginStatus: `Logged in as ${email}` } }
-	} catch (err) {
-		return { props: { initialLoginStatus: 'Not logged in' } }
+		if (loggedIn) {
+			// Si el usuario ya ha iniciado sesión, no es necesario realizar una solicitud a la API nuevamente.
+			// Puedes realizar otras acciones o consultas necesarias en este punto.
+
+			// Por ejemplo, si la API proporciona datos adicionales para usuarios autenticados,
+			// podrías realizar una solicitud para obtener esos datos aquí y pasarlos como props.
+
+			return {
+				props: {
+					cookies,
+					loggedIn,
+				},
+			};
+		}
+
+		return {
+			props: {
+				cookies,
+				loggedIn: false,
+			},
+		};
+	} catch (error) {
+		// Manejo de errores
+		console.error("Error:", error);
+		return {
+			props: {
+				cookies: {},
+				loggedIn: false,
+			},
+		};
 	}
 }
 
 export default function Homepage({ initialLoginStatus }) {
-	const [loginStatus, setLoginStatus] = useState(initialLoginStatus || 'Loading...')
-
-	async function getLoginStatus() {
-		setLoginStatus('Loading...')
-
+	const handleLogin = async () => {
 		try {
-			const { email } = await axios.get('/api/proxy/me').then((response) => response.data)
+			// Realiza la solicitud a la API para iniciar sesión
+			const response = await axios.post("/api/auth/login", {
+				username: "john",
+				password: "changeme",
+			});
 
-			setLoginStatus(`Logged in as ${email}`)
-		} catch (err) {
-			setLoginStatus('Not logged in')
+			// Extrae las cookies de la respuesta
+			const cookies = parse(response.headers["set-cookie"]);
+
+			// Actualiza las cookies en el navegador
+			Object.keys(cookies).forEach((name) => {
+				const cookie = serialize(name, cookies[name]);
+				document.cookie = cookie;
+			});
+
+			// Redirige o actualiza la página para reflejar el estado de inicio de sesión
+			window.location.reload();
+		} catch (error) {
+			// Manejo de errores
+			console.error("Error:", error);
 		}
-	}
-
-	async function onSubmit(e) {
-		e.preventDefault()
-
-		const email = e.target.querySelector('[name="email"]').value
-		const password = e.target.querySelector('[name="password"]').value
-
-		try {
-			await axios.post('/api/proxy/login', { email, password })
-
-			getLoginStatus()
-		} catch (err) {
-			console.error('Request failed:' + err.message)
-			getLoginStatus()
-		}
-	}
-
-	useEffect(() => {
-		if (!initialLoginStatus) {
-			getLoginStatus()
-		}
-	}, [initialLoginStatus])
+	};
 
 	return (
 		<>
-			<div className="Homepage">
-				<p className="login-status">
-					{loginStatus} (<a href="/logout">Logout</a>)
-				</p>
-
-				<form className="login-form" onSubmit={onSubmit}>
-					<label>
-						<span>Email</span>
-						<input name="email" type="email" required />
-					</label>
-
-					<label>
-						<span>Password</span>
-						<input name="password" type="password" required />
-					</label>
-
-					<button type="submit">Log in!</button>
-				</form>
-
-				<p>
-					<small>To emulate successful login, use "admin@example.com" and any password.</small>
-				</p>
-
-				<hr />
-				<p>
-					<small>
-						Blog post:{' '}
-						<a href="https://maxschmitt.me/posts/next-js-http-only-cookie-auth-tokens/">
-							Next.js: Using HTTP-Only Cookies for Secure Authentication
-						</a>
-					</small>
-				</p>
-			</div>
+			<button onClick={handleLogin}>DAleeeeeeeeeeeee</button>
 		</>
-	)
+	);
 }
