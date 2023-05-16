@@ -1,12 +1,19 @@
 import axios from "axios";
 import { parse, serialize } from "cookie";
+import Cookies from "cookies";
+import { useEffect } from "react";
 
-export async function getServerSideProps({ req }) {
+export async function getServerSideProps({ req , res }) {
 	try {
 		const cookies = parse(req.headers.cookie || "");
+		const cookiesV2 = new Cookies(req, res)
+
+	/* 	console.log('cookie desde el back' , cookies); */
 
 		//esta logica no funciona en el cliente llega false cuando se loguea
 		const loggedIn = cookies.isLoggedIn === "true";
+
+		console.log(cookiesV2.get('Authentication'))
 
 		if (loggedIn) {
 			return {
@@ -35,6 +42,7 @@ export async function getServerSideProps({ req }) {
 }
 
 export default function Homepage(props) {
+	console.log(props);
 
 	const handleLogin = async () => {
 		try {
@@ -60,9 +68,24 @@ export default function Homepage(props) {
 		}
 	};
 
+	const prueba = async () => {
+		try {
+			const response = await axios.get('/api/users', {
+				headers:{
+					Authorization : `Bearer ${props.cookies.Authentication}`
+				}
+			})
+		console.log(response)
+		} catch (error) {
+			console.log(error);
+		}
+	}
+	
+
 	return (
 		<>
 			<button onClick={handleLogin}>DAleeeeeeeeeeeee</button>
+			<button onClick={prueba}>lista de usuarios</button>
 		</>
 	);
 }
