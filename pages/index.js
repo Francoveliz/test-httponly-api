@@ -5,6 +5,7 @@ export async function getServerSideProps({ req }) {
 	try {
 		const cookies = parse(req.headers.cookie || "");
 
+		//esta logica no funciona en el cliente llega false cuando se loguea
 		const loggedIn = cookies.isLoggedIn === "true";
 
 		if (loggedIn) {
@@ -33,7 +34,8 @@ export async function getServerSideProps({ req }) {
 	}
 }
 
-export default function Homepage({ initialLoginStatus }) {
+export default function Homepage(props) {
+
 	const handleLogin = async () => {
 		try {
 			const response = await axios.post("/api/auth/login", {
